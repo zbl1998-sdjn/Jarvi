@@ -33,9 +33,10 @@ const EMPTY_CONFIG: RuntimeConfig = {
   ],
   active_provider_id: 'provider-1',
   speech: {
-    key: '',
-    region: '',
-    voice_name: 'zh-CN-XiaoxiaoNeural',
+    api_key: '',
+    asr_model: 'paraformer-realtime-v2',
+    tts_model: 'cosyvoice-v1',
+    voice_name: 'longxiaochun',
     language: 'zh-CN',
   },
 };
@@ -211,36 +212,49 @@ export function RuntimeConfigPanel({
           ))}
         </section>
         <section className="provider-card">
-          <h3>语音配置</h3>
+          <h3>语音配置（阿里云 DashScope）</h3>
           <label className="settings-field">
-            <span>Azure Key</span>
+            <span>DashScope API Key</span>
             <input
               className="settings-input"
               onChange={(event) =>
                 setDraft((current) => ({
                   ...current,
-                  speech: { ...current.speech, key: event.target.value },
+                  speech: { ...current.speech, api_key: event.target.value },
                 }))
               }
-              value={draft.speech.key}
+              value={draft.speech.api_key}
             />
           </label>
           <label className="settings-field">
-            <span>Region</span>
+            <span>ASR 模型</span>
             <input
               className="settings-input"
               onChange={(event) =>
                 setDraft((current) => ({
                   ...current,
-                  speech: { ...current.speech, region: event.target.value },
+                  speech: { ...current.speech, asr_model: event.target.value },
                 }))
               }
-              value={draft.speech.region}
+              value={draft.speech.asr_model}
             />
           </label>
           <label className="settings-field">
-            <span>Voice</span>
+            <span>TTS 模型</span>
             <input
+              className="settings-input"
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  speech: { ...current.speech, tts_model: event.target.value },
+                }))
+              }
+              value={draft.speech.tts_model}
+            />
+          </label>
+          <label className="settings-field">
+            <span>音色（Voice）</span>
+            <select
               className="settings-input"
               onChange={(event) =>
                 setDraft((current) => ({
@@ -249,6 +263,25 @@ export function RuntimeConfigPanel({
                 }))
               }
               value={draft.speech.voice_name}
+            >
+              <option value="longxiaochun">longxiaochun（长晓春·女声，推荐）</option>
+              <option value="longxiaobai">longxiaobai（长晓白·女声）</option>
+              <option value="longwan">longwan（龙婉·女声）</option>
+              <option value="longcheng">longcheng（龙橙·男声）</option>
+              <option value="longhua">longhua（龙华·男声）</option>
+            </select>
+          </label>
+          <label className="settings-field">
+            <span>识别语言</span>
+            <input
+              className="settings-input"
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  speech: { ...current.speech, language: event.target.value },
+                }))
+              }
+              value={draft.speech.language}
             />
           </label>
           <div className="config-button-row">

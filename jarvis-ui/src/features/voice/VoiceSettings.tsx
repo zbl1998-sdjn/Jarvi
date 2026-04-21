@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { PreferenceState } from '../../app/api/assistant-client';
 
 const TEACHER_STYLES = ['幽默风趣型', '面试高压陪练型'];
-const VOICE_OPTIONS = ['zh-CN-XiaoxiaoNeural', 'zh-CN-YunxiNeural', 'zh-CN-XiaochenNeural'];
+const VOICE_OPTIONS = ['longxiaochun', 'longxiaobai', 'longwan', 'longcheng', 'longhua'];
 
 interface VoiceSettingsProps {
   preferences: PreferenceState;

@@ -140,8 +140,9 @@ export interface RuntimeProviderConfig {
 }
 
 export interface RuntimeSpeechConfig {
-  key: string;
-  region: string;
+  api_key: string;
+  asr_model: string;
+  tts_model: string;
   voice_name: string;
   language: string;
 }

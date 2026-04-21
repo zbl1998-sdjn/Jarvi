@@ -24,6 +24,7 @@ import {
 import { streamChat } from '../../app/api/chat-client';
 import { createRealtimeVoiceClient } from '../../app/api/realtime-client';
 import { RuntimeConfigPanel } from '../config/RuntimeConfigPanel';
+import { OverlayDrawer } from '../layout/OverlayDrawer';
 import { LeftDrawer } from '../panels/LeftDrawer';
 import { RightDrawer } from '../panels/RightDrawer';
 import { ContextUpload } from '../uploads/ContextUpload';
@@ -80,6 +81,8 @@ export function MainConsole() {
   const [pendingConfirmations, setPendingConfirmations] = useState<
     ActionProposal[]
   >([]);
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
   const initialHomeLoadedRef = useRef(false);
   const realtimeClientRef = useRef(
     createRealtimeVoiceClient({
@@ -400,18 +403,34 @@ export function MainConsole() {
     .join('；');
 
   return (
-    <div className="console-shell">
+    <div className="console-shell console-shell--hud">
       <TopStatusBar modeLabel={modeLabel} statusItems={statusItems} />
-      <div className="console-layout">
-        <LeftDrawer
-          preferences={homeSnapshot.preferences}
-          resume={homeSnapshot.resume}
-          stageProgress={homeSnapshot.stage_progress}
-          tasks={homeSnapshot.tasks}
-          memories={homeSnapshot.memories}
-          reminders={homeSnapshot.reminders}
-        />
-        <main className="console-center">
+      <div className="console-layout console-layout--collapsed">
+        <button
+          aria-expanded={leftDrawerOpen}
+          aria-label="展开左侧学习面板"
+          className="drawer-handle drawer-handle--left"
+          onClick={() => setLeftDrawerOpen((value) => !value)}
+          type="button"
+        >
+          学习面板
+        </button>
+        <OverlayDrawer
+          onClose={() => setLeftDrawerOpen(false)}
+          open={leftDrawerOpen}
+          side="left"
+          title="学习进度与记忆"
+        >
+          <LeftDrawer
+            memories={homeSnapshot.memories}
+            preferences={homeSnapshot.preferences}
+            reminders={homeSnapshot.reminders}
+            resume={homeSnapshot.resume}
+            stageProgress={homeSnapshot.stage_progress}
+            tasks={homeSnapshot.tasks}
+          />
+        </OverlayDrawer>
+        <main className="console-center console-center--wide">
           <VoiceOrb state={voiceState} />
           <div className="shell-meta">
             <span>{shellInfo?.app ?? 'Jarvis'}</span>
@@ -498,11 +517,30 @@ export function MainConsole() {
             uploadedContexts={homeSnapshot.uploaded_contexts}
           />
         </main>
-        <RightDrawer
-          onApproveAction={(proposal) => void handleApproveAction(proposal)}
-          pendingConfirmations={pendingConfirmations}
-          recentActions={homeSnapshot.recent_actions}
-        />
+        <button
+          aria-expanded={rightDrawerOpen}
+          aria-label="展开右侧动作面板"
+          className="drawer-handle drawer-handle--right"
+          onClick={() => setRightDrawerOpen((value) => !value)}
+          type="button"
+        >
+          动作面板
+          {pendingConfirmations.length > 0 ? (
+            <span className="drawer-handle__badge">{pendingConfirmations.length}</span>
+          ) : null}
+        </button>
+        <OverlayDrawer
+          onClose={() => setRightDrawerOpen(false)}
+          open={rightDrawerOpen}
+          side="right"
+          title="动作确认与记录"
+        >
+          <RightDrawer
+            onApproveAction={(proposal) => void handleApproveAction(proposal)}
+            pendingConfirmations={pendingConfirmations}
+            recentActions={homeSnapshot.recent_actions}
+          />
+        </OverlayDrawer>
       </div>
       <CommandDock
         activeWorkspace={activeWorkspace}

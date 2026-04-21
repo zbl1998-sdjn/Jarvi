@@ -3,7 +3,7 @@
 ## 严格版 M1-M6 运行说明
 
 1. 启动本机 PostgreSQL，并创建 `jarvis` 数据库。
-2. 复制 `.env.example` 为 `.env`，填入 Kimi 与 Azure Speech 配置。
+2. 复制 `.env.example` 为 `.env`，填入 Kimi 与阿里云 DashScope（Paraformer ASR + CosyVoice TTS）配置。
 3. 在 `D:\Jarvis\jarvis-server` 执行 `pip install -r requirements.txt`。
 4. 在 `D:\Jarvis` 执行 `npm install`。
 5. 启动桌面端：`npm run dev:desktop`。
@@ -14,7 +14,7 @@
 | 里程碑 | 已完成能力 |
 | --- | --- |
 | M1 | PostgreSQL 基线、`contracts/` 契约骨架、健康检查、受限态启动、托盘常驻、中文主控台 |
-| M2 | 麦克风音频分片、WebSocket 语音链路、Azure Speech ASR/TTS、语音打断、语音事件入库 |
+| M2 | 麦克风音频分片、WebSocket 语音链路、阿里云 DashScope（Paraformer ASR / CosyVoice TTS，音色：longxiaochun / longxiaobai / longwan / longcheng / longhua）、语音打断、语音事件入库 |
 | M3 | `Jarvis` 唤醒词容错、技术词/路径词纠偏、低风险澄清、高风险强确认、老师风格切换 |
 | M4 | 本地/知识库/网页/自动搜索、统一总结、资料上传、搜索/上传工作台 |
 | M5 | 文件读写、命令执行、`fetch_web` / `open_web_page` 受控网页动作、风险分级、动作审计 |

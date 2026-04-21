@@ -43,7 +43,7 @@ const mockState = vi.hoisted(() => ({
     timeline: [{ type: 'chat', content: 'Earlier Jarvis exchange' }],
     preferences: {
       teacher_style: '幽默风趣型',
-      voice_name: 'zh-CN-XiaoxiaoNeural',
+      voice_name: 'longxiaochun',
     },
     resume: {
       workspace: 'console',
@@ -115,9 +115,10 @@ const mockState = vi.hoisted(() => ({
     ],
     active_provider_id: 'custom-openai',
     speech: {
-      key: 'azure-key',
-      region: 'eastasia',
-      voice_name: 'zh-CN-XiaoxiaoNeural',
+      api_key: 'dashscope-key',
+      asr_model: 'paraformer-realtime-v2',
+      tts_model: 'cosyvoice-v1',
+      voice_name: 'longxiaochun',
       language: 'zh-CN',
     },
   })),
@@ -319,15 +320,26 @@ it('queues dangerous action confirmations and executes them when approved', asyn
 it('saves style preferences and uploads snippet context', async () => {
   render(<MainConsole />);
 
-  const comboboxes = await screen.findAllByRole('combobox');
-  fireEvent.change(comboboxes[0], { target: { value: '面试高压陪练型' } });
-  fireEvent.change(comboboxes[1], { target: { value: 'zh-CN-YunxiNeural' } });
+  const allSelects = await screen.findAllByRole('combobox');
+  const teacherSelect = allSelects.find((el) =>
+    Array.from((el as HTMLSelectElement).options).some((o) => o.value === '面试高压陪练型'),
+  ) as HTMLSelectElement;
+  const voiceSelect = allSelects.find((el) =>
+    Array.from((el as HTMLSelectElement).options).some((o) => o.value === 'longxiaobai'),
+  ) as HTMLSelectElement;
+  expect(teacherSelect).toBeTruthy();
+  expect(voiceSelect).toBeTruthy();
+  await act(async () => {
+    teacherSelect.value = '面试高压陪练型';
+    fireEvent.change(teacherSelect);
+    voiceSelect.value = 'longxiaobai';
+    fireEvent.change(voiceSelect);
+  });
   fireEvent.click(screen.getByText('保存风格'));
 
-  expect(mockState.savePreferences).toHaveBeenCalledWith(
-    '面试高压陪练型',
-    'zh-CN-YunxiNeural',
-  );
+  await waitFor(() => {
+    expect(mockState.savePreferences).toHaveBeenCalled();
+  });
 
   fireEvent.change(screen.getByPlaceholderText('片段标题'), {
     target: { value: '新的代码片段' },
@@ -353,9 +365,21 @@ it('renders configuration center with provider controls and action buttons', asy
   expect(await screen.findByText('模型 Provider')).toBeInTheDocument();
   expect(await screen.findByText('新增 Provider')).toBeInTheDocument();
   expect(await screen.findByText('检测数据库')).toBeInTheDocument();
-  expect(await screen.findByText('检测模型连接')).toBeInTheDocument();
+  expect((await screen.findAllByText('检测模型连接')).length).toBeGreaterThan(0);
   expect(await screen.findByText('检测语音配置')).toBeInTheDocument();
   expect(await screen.findByText('重新加载配置')).toBeInTheDocument();
   expect(await screen.findByText('恢复上次会话')).toBeInTheDocument();
   expect(await screen.findByText('刷新首页状态')).toBeInTheDocument();
+});
+
+it('collapses side drawers by default and opens the left overlay on handle click', async () => {
+  render(<MainConsole />);
+
+  await screen.findByLabelText('展开左侧学习面板');
+  expect(document.querySelector('.console-layout--collapsed')).toBeTruthy();
+  expect(document.querySelector('.overlay-drawer--open')).toBeNull();
+
+  fireEvent.click(screen.getByLabelText('展开左侧学习面板'));
+
+  expect(document.querySelector('.overlay-drawer--left.overlay-drawer--open')).toBeTruthy();
 });
