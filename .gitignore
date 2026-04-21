@@ -5,7 +5,9 @@ dist-electron/
 *.tsbuildinfo
 .venv/
 runtime/
+.worktrees
 .worktrees/
+worktrees
 worktrees/
 .env
 __pycache__/
