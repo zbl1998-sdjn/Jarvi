@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Action Proposal",
+  "type": "object",
+  "required": ["action_type", "target", "risk_level", "requires_confirmation"],
+  "properties": {
+    "action_type": { "type": "string" },
+    "target": { "type": "string" },
+    "risk_level": {
+      "type": "string",
+      "enum": ["safe", "dangerous"]
+    },
+    "requires_confirmation": { "type": "boolean" }
+  }
+}

@@ -1,3 +1,11 @@
-.worktrees/
-.superpowers/
-
+node_modules/
+jarvis-ui/node_modules/
+dist/
+dist-electron/
+*.tsbuildinfo
+.venv/
+runtime/
+.env
+__pycache__/
+.pytest_cache/
+jarvis.db

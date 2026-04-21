@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workspace Command",
+  "type": "object",
+  "required": ["workspace"],
+  "properties": {
+    "workspace": {
+      "type": "string",
+      "enum": ["console", "search", "summary", "records", "tasks"]
+    },
+    "focus_target": { "type": "string" }
+  }
+}

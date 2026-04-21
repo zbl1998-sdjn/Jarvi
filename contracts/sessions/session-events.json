@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session Event",
+  "type": "object",
+  "required": ["session_id", "event", "timestamp"],
+  "properties": {
+    "session_id": { "type": "string" },
+    "event": {
+      "type": "string",
+      "enum": ["session_started", "user_message", "assistant_message", "session_restored"]
+    },
+    "timestamp": { "type": "string" }
+  }
+}

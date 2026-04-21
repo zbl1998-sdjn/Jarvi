@@ -1,0 +1,25 @@
+{
+  "name": "jarvis",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev:server": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-server.ps1",
+    "watch:electron": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
+    "dev:electron": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-electron.ps1",
+    "build:ui": "npm --prefix .\\jarvis-ui run build",
+    "dev:desktop": "npm run build:ui && concurrently -k \"npm:watch:electron\" \"npm:dev:server\" \"npm:dev:electron\"",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "test:electron": "vitest run --dir electron/lib"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^38.3.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.5"
+  }
+}

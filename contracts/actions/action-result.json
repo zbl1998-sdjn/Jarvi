@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Action Result",
+  "type": "object",
+  "required": ["action_type", "target", "risk_level", "status", "output"],
+  "properties": {
+    "action_type": { "type": "string" },
+    "target": { "type": "string" },
+    "risk_level": {
+      "type": "string",
+      "enum": ["safe", "dangerous"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "confirmation_required", "completed", "failed"]
+    },
+    "output": { "type": "string" }
+  }
+}

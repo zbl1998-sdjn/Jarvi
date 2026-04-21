@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "electron",
+    "outDir": "dist-electron",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "types": [
+      "node",
+      "electron"
+    ]
+  },
+  "include": [
+    "electron/**/*.ts"
+  ],
+  "exclude": [
+    "electron/**/*.test.ts"
+  ]
+}

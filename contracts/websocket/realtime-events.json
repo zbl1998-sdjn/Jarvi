@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Realtime Event",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["voice_state", "transcript", "audio_chunk", "error"]
+    },
+    "state": {
+      "type": "string",
+      "enum": ["idle", "listening", "thinking", "speaking", "interrupted"]
+    },
+    "text": { "type": "string" },
+    "final": { "type": "boolean" }
+  }
+}
