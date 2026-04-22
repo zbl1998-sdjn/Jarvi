@@ -11,6 +11,7 @@ class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     next_message_sequence: Mapped[int] = mapped_column(Integer, default=0)
     next_realtime_event_sequence: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[dt.datetime] = mapped_column(
@@ -83,6 +84,44 @@ class MemoryEntry(Base):
         DateTime(timezone=True),
         default=lambda: dt.datetime.now(dt.UTC),
     )
+
+
+class MemoryFact(Base):
+    __tablename__ = "memory_facts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    fact_type: Mapped[str] = mapped_column(String(64))
+    subject: Mapped[str] = mapped_column(String(128), default="")
+    value: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(64))
+    confidence: Mapped[int] = mapped_column(Integer, default=50)
+    last_confirmed_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: dt.datetime.now(dt.UTC),
+    )
+
+
+class UserProfileFact(Base):
+    __tablename__ = "user_profile_facts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    profile_type: Mapped[str] = mapped_column(String(64))
+    value: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(64))
+    last_confirmed_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: dt.datetime.now(dt.UTC),
+    )
+
+
+class SessionArtifact(Base):
+    __tablename__ = "session_artifacts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    artifact_type: Mapped[str] = mapped_column(String(64))
+    session_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    summary: Mapped[str] = mapped_column(Text)
+    payload: Mapped[str] = mapped_column(Text, default="")
 
 
 class PreferenceState(Base):
