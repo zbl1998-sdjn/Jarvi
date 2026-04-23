@@ -44,7 +44,7 @@ const EMPTY_HOME: HomeSnapshot = {
   timeline: [],
   preferences: {
     teacher_style: '幽默风趣型',
-    voice_name: 'zh-CN-XiaoxiaoNeural',
+    voice_name: 'longxiaochun',
   },
   resume: {
     workspace: 'console',
@@ -226,7 +226,7 @@ export function MainConsole() {
         ]);
       }
 
-      if (interpretation.clarification) {
+      if (interpretation.clarification && (hotkeyArmed || interpretation.heard_wakeword)) {
         setReply((current) =>
           current ? `${current}\n\n${interpretation.clarification}` : interpretation.clarification!,
         );

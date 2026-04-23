@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -21,6 +22,8 @@ from app.services.summary_service import SummaryService
 from app.services.wakeword_service import WakewordService
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 wakeword_service = WakewordService()
 search_service = SearchService()
@@ -220,8 +223,8 @@ def store_runtime_configuration(request: RuntimeConfigRequest) -> dict[str, obje
                 voice_name=request.speech.voice_name,
             )
             db.commit()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Voice sync after runtime-config save failed: %s", exc)
         finally:
             db.close()
     return runtime_config.to_dict()

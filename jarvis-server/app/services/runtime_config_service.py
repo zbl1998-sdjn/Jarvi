@@ -180,5 +180,6 @@ def _runtime_config_from_payload(payload: dict[str, object]) -> RuntimeConfig:
             or fallback.speech.provider,
         ),
         knowledge_root=str(payload.get("knowledge_root", fallback.knowledge_root)).strip()
-        or fallback.knowledge_root,
+        if payload.get("knowledge_root") is not None
+        else fallback.knowledge_root,
     )

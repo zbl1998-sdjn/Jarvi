@@ -681,3 +681,73 @@ def test_store_runtime_config_configure_db_not_skipped_if_voice_sync_fails(tmp_p
     assert configure_db_calls[0] == "sqlite+pysqlite:///test-failsync.db"
     # The API must still return 200 — voice sync failure is non-fatal
     assert response.status_code == 200
+
+
+def test_knowledge_root_can_be_cleared_to_empty_string(tmp_path, monkeypatch) -> None:
+    """Setting knowledge_root='' must persist as empty string, not revert to settings default.
+
+    Bug: _runtime_config_from_payload used `or fallback.knowledge_root`, so an explicit
+    empty string silently fell back and the user could never actually clear the override.
+    """
+    config_path = tmp_path / "runtime-config.json"
+    monkeypatch.setattr("app.services.runtime_config_service.RUNTIME_CONFIG_PATH", config_path)
+    monkeypatch.setattr("app.routers.assistant.configure_database", lambda _url: None)
+
+    client = TestClient(create_app())
+    payload = {
+        "database_url": "sqlite+pysqlite:///test-clear.db",
+        "providers": [{
+            "id": "p1", "label": "Test",
+            "base_url": "https://api.test.ai/v1", "api_key": "key",
+            "model": "model-x", "enabled": True,
+        }],
+        "active_provider_id": "p1",
+        "speech": {
+            "api_key": "", "asr_model": "paraformer-realtime-v2",
+            "tts_model": "cosyvoice-v1", "voice_name": "longxiaochun",
+            "language": "zh-CN", "provider": "aliyun",
+        },
+        "knowledge_root": "",  # explicit empty → must clear the override
+    }
+
+    save_response = client.post("/api/runtime-config", json=payload)
+    assert save_response.status_code == 200
+    # The returned config must carry empty string, not the settings default path
+    assert save_response.json()["knowledge_root"] == ""
+
+    # The persisted JSON file must also store ""
+    persisted = json.loads(config_path.read_text(encoding="utf-8"))
+    assert persisted["knowledge_root"] == ""
+
+    # Re-reading via GET must also return ""
+    get_response = client.get("/api/runtime-config")
+    assert get_response.status_code == 200
+    assert get_response.json()["knowledge_root"] == ""
+
+
+def test_get_runtime_config_returns_empty_knowledge_root_when_config_stores_empty(tmp_path, monkeypatch) -> None:
+    """get_runtime_config() must return knowledge_root='' when the JSON stores '' — not fall back."""
+    config_path = tmp_path / "runtime-config.json"
+    config_path.write_text(
+        json.dumps({
+            "database_url": "sqlite+pysqlite:///test-read-empty.db",
+            "providers": [{
+                "id": "p1", "label": "Test",
+                "base_url": "https://api.test.ai/v1", "api_key": "key",
+                "model": "model-x", "enabled": True,
+            }],
+            "active_provider_id": "p1",
+            "speech": {
+                "api_key": "", "asr_model": "paraformer-realtime-v2",
+                "tts_model": "cosyvoice-v1", "voice_name": "longxiaochun",
+                "language": "zh-CN", "provider": "aliyun",
+            },
+            "knowledge_root": "",
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("app.services.runtime_config_service.RUNTIME_CONFIG_PATH", config_path)
+
+    from app.services.runtime_config_service import get_runtime_config
+    config = get_runtime_config()
+    assert config.knowledge_root == ""

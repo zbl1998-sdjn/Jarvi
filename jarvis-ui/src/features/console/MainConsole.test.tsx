@@ -478,8 +478,8 @@ it('text send with clarification appends to streamed reply instead of overwritin
     },
   );
   mockState.interpretVoice.mockResolvedValueOnce({
-    heard_wakeword: false,
-    normalized_text: 'tell me',
+    heard_wakeword: true,
+    normalized_text: 'Jarvis tell me',
     workspace: null,
     clarification: '请问您具体指的是哪个项目？',
     action_proposal: null,
@@ -697,4 +697,46 @@ it('saving runtime config with a different voice refreshes the status bar voice 
     expect(screen.getByText(/音色：longxiaobai/)).toBeInTheDocument();
   });
   expect(screen.queryByText(/音色：longxiaochun/)).not.toBeInTheDocument();
+});
+
+// ── Issue 1 fix: plain text send MUST NOT append wakeword reminder ────────────
+it('plain text send without wakeword does not append the wakeword reminder to chat reply', async () => {
+  mockState.streamChat.mockImplementationOnce(
+    async (
+      _query: string,
+      onEvent: (event: string, data: Record<string, unknown>) => void,
+    ) => {
+      onEvent('session', { session_id: 'abc123' });
+      onEvent('text', { text: 'plain chat reply' });
+      onEvent('done', { session_id: 'abc123' });
+    },
+  );
+  // WakewordService returns the wakeword reminder when no wakeword is detected
+  mockState.interpretVoice.mockResolvedValueOnce({
+    heard_wakeword: false,
+    normalized_text: 'hello',
+    workspace: null,
+    clarification: '请先说 Jarvis，或先用全局热键唤醒我。',
+    action_proposal: null,
+  });
+
+  render(<MainConsole />);
+
+  fireEvent.change(screen.getByPlaceholderText('向 Jarvis 发送文本指令…'), {
+    target: { value: 'hello' },
+  });
+  fireEvent.click(screen.getByText('发送'));
+
+  // Wait for interpretVoice to have been called (ensures the full async chain ran)
+  await waitFor(() => {
+    expect(mockState.interpretVoice).toHaveBeenCalledTimes(1);
+  });
+  // Flush any pending React state updates triggered by interpretVoice's resolution
+  await act(async () => {});
+
+  const replyCard = document.querySelector('.reply-card');
+  // Streamed chat reply must be shown
+  expect(replyCard?.textContent).toContain('plain chat reply');
+  // Wakeword reminder must NOT be appended to a plain text reply
+  expect(replyCard?.textContent).not.toContain('请先说 Jarvis');
 });
