@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
@@ -13,7 +15,9 @@ async def chat(query: str, session_id: str | None = None) -> StreamingResponse:
     db = SessionLocal()
     repository = SessionRepository(db)
     try:
-        prepared_chat = prepare_chat(query=query, session_id=session_id, repository=repository)
+        prepared_chat = await asyncio.to_thread(
+            prepare_chat, query=query, session_id=session_id, repository=repository
+        )
     except Exception:
         db.close()
         raise

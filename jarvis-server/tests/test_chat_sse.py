@@ -255,6 +255,30 @@ def test_chat_stream_uses_model_response(monkeypatch) -> None:
     }
 
 
+def test_chat_prepare_chat_runs_outside_event_loop(monkeypatch) -> None:
+    """prepare_chat must run in a worker thread (outside the async event loop)."""
+    import asyncio
+    from app.services.chat_service import PreparedChat
+
+    loop_state: list[str] = []
+
+    def fake_prepare_chat(*args, **kwargs):
+        try:
+            asyncio.get_running_loop()
+            loop_state.append("has_loop")
+        except RuntimeError:
+            loop_state.append("no_loop")
+        return PreparedChat(session_id="offload-test", answer="ok")
+
+    monkeypatch.setattr("app.routers.chat.prepare_chat", fake_prepare_chat)
+
+    client = TestClient(create_app())
+    response = client.get("/api/chat", params={"query": "offload test"})
+
+    assert response.status_code == 200
+    assert loop_state == ["no_loop"]
+
+
 def test_chat_returns_error_response_when_persistence_fails_before_first_event(monkeypatch) -> None:
     class FakeDb:
         def close(self) -> None:
@@ -269,6 +293,9 @@ def test_chat_returns_error_response_when_persistence_fails_before_first_event(m
 
         def create_session(self) -> str:
             return "session-789"
+
+        def list_messages(self, session_id: str) -> list[tuple[str, str]]:
+            return []
 
         def append_message(self, session_id: str, role: str, content: str) -> None:
             raise RuntimeError("database unavailable")
