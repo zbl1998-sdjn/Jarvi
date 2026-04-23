@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { buildSidecarCommand } from './sidecar-config';
 
 describe('buildSidecarCommand', () => {
-  it('returns the uvicorn dev command for Windows PowerShell', () => {
-    expect(buildSidecarCommand()).toEqual({
+  it('builds the dev server script path from the app root', () => {
+    expect(buildSidecarCommand('D:\\Projects\\Jarvis')).toEqual({
       file: 'powershell.exe',
       args: [
         '-NoProfile',
         '-ExecutionPolicy',
         'Bypass',
         '-File',
-        'D:\\Jarvis\\scripts\\dev-server.ps1',
+        'D:\\Projects\\Jarvis\\scripts\\dev-server.ps1',
       ],
     });
   });

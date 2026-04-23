@@ -10,6 +10,8 @@ runtime/
 worktrees
 worktrees/
 .env
+.superpowers/
 __pycache__/
 .pytest_cache/
 jarvis.db
+jarvis-server/jarvis-data/

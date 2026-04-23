@@ -62,6 +62,12 @@ def test_settings_define_postgresql_database_url_by_default() -> None:
     assert settings.database_url == "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/jarvis"
 
 
+def test_settings_define_portable_knowledge_root_by_default() -> None:
+    settings = Settings()
+
+    assert settings.knowledge_root == str(config_module.ROOT_DIR / "knowledge")
+
+
 def test_settings_read_server_host_and_port_from_configured_env_file(tmp_path, monkeypatch) -> None:
     env_path = tmp_path / ".env"
     env_path.write_text(
@@ -172,11 +178,14 @@ def test_create_app_can_use_isolated_database_before_app_setup(tmp_path) -> None
         "chat_messages",
         "chat_sessions",
         "memory_entries",
+        "memory_facts",
         "preference_states",
         "realtime_events",
         "reminder_events",
+        "session_artifacts",
         "task_items",
         "uploaded_contexts",
+        "user_profile_facts",
         "workspace_states",
     ]
     assert str(db_module.get_engine().url) == "postgresql+psycopg://postgres:***@127.0.0.1:5432/jarvis"
@@ -207,7 +216,9 @@ def test_create_app_starts_in_degraded_mode_when_database_bootstrap_fails(monkey
 
 
 def test_contract_scaffold_exists_for_cross_layer_schema() -> None:
-    project_root = Path(r"D:\Jarvis\.worktrees\jarvis-m1-shell-text-console")
+    from app.config import ROOT_DIR
+
+    project_root = ROOT_DIR
     required_contracts = [
         project_root / "contracts" / "sessions" / "session-events.json",
         project_root / "contracts" / "websocket" / "realtime-events.json",

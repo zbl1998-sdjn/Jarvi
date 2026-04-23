@@ -23,4 +23,16 @@ contextBridge.exposeInMainWorld('jarvisDesktop', {
       ipcRenderer.removeListener('jarvis-hotkey-triggered', listener);
     };
   },
+  setAmbientMode: (enabled: boolean) => {
+    ipcRenderer.send('jarvis-ambient-mode', enabled);
+  },
+  setClickThrough: (enabled: boolean) => {
+    ipcRenderer.send('jarvis-click-through', enabled);
+  },
+  setOrbMode: (enabled: boolean) => {
+    ipcRenderer.send('jarvis-orb-mode', enabled);
+  },
+  setOrbClickThrough: (enabled: boolean) => {
+    ipcRenderer.send('jarvis-orb-click-through', enabled);
+  },
 });

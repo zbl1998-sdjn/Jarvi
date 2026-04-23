@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMainWindowOptions } from './window-options';
+import { createMainWindowOptions, createOrbWindowOptions } from './window-options';
 
 describe('createMainWindowOptions', () => {
   it('uses the Jarvis preload bridge and dark background', () => {
@@ -16,3 +16,20 @@ describe('createMainWindowOptions', () => {
     );
   });
 });
+
+describe('createOrbWindowOptions', () => {
+  it('is a small, transparent, borderless, always-on-top hologram orb', () => {
+    const options = createOrbWindowOptions('D:\\preload.js');
+
+    expect(options.frame).toBe(false);
+    expect(options.transparent).toBe(true);
+    expect(options.alwaysOnTop).toBe(true);
+    expect(options.skipTaskbar).toBe(true);
+    expect(options.resizable).toBe(false);
+    expect(options.hasShadow).toBe(false);
+    expect(options.width).toBe(180);
+    expect(options.height).toBe(180);
+    expect(options.show).toBe(false);
+  });
+});
+

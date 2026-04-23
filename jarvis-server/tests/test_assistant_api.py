@@ -88,7 +88,8 @@ def test_search_summary_and_home_snapshot_work_together() -> None:
     assert task_response.json()["title"] == "Review M6 timeline"
     assert action_response.status_code == 200
     assert action_response.json()["status"] == "completed"
-    assert Path("D:/Jarvis/.worktrees/jarvis-m1-shell-text-console/runtime/temp/m6-note.txt").exists()
+    from app.config import ROOT_DIR
+    assert (ROOT_DIR / "runtime" / "temp" / "m6-note.txt").exists()
     assert home_response.status_code == 200
     assert home_response.json()["tasks"]
     assert home_response.json()["memories"]
