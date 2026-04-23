@@ -145,6 +145,7 @@ export interface RuntimeSpeechConfig {
   tts_model: string;
   voice_name: string;
   language: string;
+  provider: string;
 }
 
 export interface RuntimeConfig {
@@ -152,6 +153,7 @@ export interface RuntimeConfig {
   providers: RuntimeProviderConfig[];
   active_provider_id: string;
   speech: RuntimeSpeechConfig;
+  knowledge_root: string;
 }
 
 export interface RuntimeConfigCheck {

@@ -38,7 +38,9 @@ const EMPTY_CONFIG: RuntimeConfig = {
     tts_model: 'cosyvoice-v1',
     voice_name: 'longxiaochun',
     language: 'zh-CN',
+    provider: 'aliyun',
   },
+  knowledge_root: '',
 };
 
 export function RuntimeConfigPanel({
@@ -125,6 +127,58 @@ export function RuntimeConfigPanel({
     <section className="workspace-card workspace-card--compact">
       <h2>服务与模型配置</h2>
       <div className="settings-grid settings-grid--single">
+        <section className="provider-card">
+          <h3>快速设置</h3>
+          <label className="settings-field">
+            <span>LLM 提供商</span>
+            <select
+              className="settings-input"
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, active_provider_id: event.target.value }))
+              }
+              value={draft.active_provider_id}
+            >
+              {draft.providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label || provider.id}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="settings-field">
+            <span>LLM 模型</span>
+            <input
+              className="settings-input"
+              onChange={(event) =>
+                updateProvider(activeProviderIndex, 'model', event.target.value)
+              }
+              value={draft.providers[activeProviderIndex]?.model ?? ''}
+            />
+          </label>
+          <label className="settings-field">
+            <span>语音提供商</span>
+            <input
+              className="settings-input"
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  speech: { ...current.speech, provider: event.target.value },
+                }))
+              }
+              value={draft.speech.provider}
+            />
+          </label>
+          <label className="settings-field">
+            <span>知识库路径</span>
+            <input
+              className="settings-input"
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, knowledge_root: event.target.value }))
+              }
+              value={draft.knowledge_root}
+            />
+          </label>
+        </section>
         <label className="settings-field">
           <span>数据库连接串</span>
           <input

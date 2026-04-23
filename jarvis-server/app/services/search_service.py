@@ -5,6 +5,7 @@ from urllib.parse import quote_plus
 import httpx
 
 from app.config import ROOT_DIR, get_settings
+from app.services.runtime_config_service import get_runtime_config
 
 
 @dataclass(frozen=True)
@@ -19,12 +20,9 @@ class SearchResult:
 
 
 class SearchService:
-    def __init__(self) -> None:
-        settings = get_settings()
-        self.roots = {
-            "local": ROOT_DIR,
-            "knowledge": Path(settings.knowledge_root),
-        }
+    def _get_knowledge_root(self) -> Path:
+        knowledge_root = get_runtime_config().knowledge_root
+        return Path(knowledge_root) if knowledge_root else Path(get_settings().knowledge_root)
 
     def search(self, query: str, scope: str) -> list[SearchResult]:
         if scope == "web":
@@ -32,7 +30,11 @@ class SearchService:
         if scope == "auto":
             return self.search_auto(query)
 
-        root = self.roots.get(scope, ROOT_DIR)
+        roots: dict[str, Path] = {
+            "local": ROOT_DIR,
+            "knowledge": self._get_knowledge_root(),
+        }
+        root = roots.get(scope, ROOT_DIR)
         if not root.exists():
             return []
 

@@ -92,6 +92,7 @@ class RuntimeConfigRequest(BaseModel):
     providers: list[ProviderRequest]
     active_provider_id: str
     speech: SpeechConfigRequest
+    knowledge_root: str = ""
 
 
 @router.post("/api/assistant/interpret")
@@ -204,7 +205,25 @@ def load_runtime_configuration() -> dict[str, object]:
 @router.post("/api/runtime-config")
 def store_runtime_configuration(request: RuntimeConfigRequest) -> dict[str, object]:
     runtime_config = save_runtime_config(request.model_dump())
+    # Reconfigure the database first so voice sync targets the newly configured DB,
+    # and so a voice-sync error can never prevent the DB from being switched.
     configure_database(runtime_config.database_url)
+    # Sync the DB-backed preference voice_name to the new DB.
+    # This is non-fatal: if it fails, the database reconfiguration already completed.
+    if request.speech.voice_name:
+        db = SessionLocal()
+        try:
+            current = memory_service.get_preferences(db)
+            memory_service.update_preferences(
+                db,
+                teacher_style=current.teacher_style,
+                voice_name=request.speech.voice_name,
+            )
+            db.commit()
+        except Exception:
+            pass
+        finally:
+            db.close()
     return runtime_config.to_dict()
 
 
@@ -246,12 +265,21 @@ def save_preferences(request: PreferenceRequest) -> dict[str, object]:
             voice_name=request.voice_name,
         )
         db.commit()
-        return {
-            "teacher_style": preference.teacher_style,
-            "voice_name": preference.voice_name,
-        }
+        teacher_style = preference.teacher_style
+        voice_name = preference.voice_name
     finally:
         db.close()
+    # Mirror the new voice_name into the runtime config JSON so GET /api/runtime-config
+    # stays consistent with preferences (bidirectional Task 6 fix).
+    if request.voice_name:
+        current_config = get_runtime_config()
+        config_dict = current_config.to_dict()
+        config_dict["speech"]["voice_name"] = request.voice_name
+        save_runtime_config(config_dict)
+    return {
+        "teacher_style": teacher_style,
+        "voice_name": voice_name,
+    }
 
 
 @router.post("/api/context/upload")
@@ -299,7 +327,8 @@ def home() -> dict[str, object]:
             (p for p in runtime_config.providers if p.id == runtime_config.active_provider_id),
             runtime_config.providers[0],
         )
-        knowledge_root = Path(get_settings().knowledge_root)
+        knowledge_root_str = runtime_config.knowledge_root or get_settings().knowledge_root
+        knowledge_root = Path(knowledge_root_str)
         snapshot["runtime"] = {
             "llm_provider": active_provider.id,
             "llm_model": active_provider.model,

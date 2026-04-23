@@ -23,7 +23,7 @@ import {
 } from '../../app/api/assistant-client';
 import { streamChat } from '../../app/api/chat-client';
 import { createRealtimeVoiceClient } from '../../app/api/realtime-client';
-import { RuntimeConfigPanel } from '../config/RuntimeConfigPanel';
+import { RuntimeSettingsSummary } from '../config/RuntimeSettingsSummary';
 import { OverlayDrawer } from '../layout/OverlayDrawer';
 import { LeftDrawer } from '../panels/LeftDrawer';
 import { RightDrawer } from '../panels/RightDrawer';
@@ -380,6 +380,14 @@ export function MainConsole() {
     const saved = await saveRuntimeConfig(nextRuntimeConfig);
     setRuntimeConfig(saved);
     await loadHealthStatus();
+    // Refresh homeSnapshot preferences so TopStatusBar / VoiceSettings show the saved voice
+    setHomeSnapshot((current) => ({
+      ...current,
+      preferences: {
+        ...current.preferences,
+        voice_name: saved.speech.voice_name,
+      },
+    }));
     setReply('运行时配置已保存。');
   }
 
@@ -488,7 +496,7 @@ export function MainConsole() {
               homeSnapshot.resume.session_id ? handleResumeSession : undefined
             }
           />
-          <RuntimeConfigPanel
+          <RuntimeSettingsSummary
             onCheck={handleCheckRuntimeConfig}
             onFocusUpload={() => {
               setActiveWorkspace('search');

@@ -41,6 +41,7 @@ class RuntimeConfig:
     providers: list[ProviderConfig]
     active_provider_id: str
     speech: SpeechConfig
+    knowledge_root: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -48,6 +49,7 @@ class RuntimeConfig:
             "providers": [provider.to_dict() for provider in self.providers],
             "active_provider_id": self.active_provider_id,
             "speech": self.speech.to_dict(),
+            "knowledge_root": self.knowledge_root,
         }
 
 
@@ -133,6 +135,7 @@ def _default_runtime_config() -> RuntimeConfig:
             language=settings.aliyun_speech_language,
             provider="aliyun",
         ),
+        knowledge_root=settings.knowledge_root,
     )
 
 
@@ -176,4 +179,6 @@ def _runtime_config_from_payload(payload: dict[str, object]) -> RuntimeConfig:
             provider=str(speech_payload.get("provider", fallback.speech.provider)).strip()
             or fallback.speech.provider,
         ),
+        knowledge_root=str(payload.get("knowledge_root", fallback.knowledge_root)).strip()
+        or fallback.knowledge_root,
     )

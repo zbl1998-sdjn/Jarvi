@@ -121,7 +121,9 @@ const mockState = vi.hoisted(() => ({
       tts_model: 'cosyvoice-v1',
       voice_name: 'longxiaochun',
       language: 'zh-CN',
+      provider: 'aliyun',
     },
+    knowledge_root: '/custom/knowledge/root',
   })),
   saveRuntimeConfig: vi.fn(async (payload: unknown) => payload),
   checkRuntimeConfig: vi.fn(async () => ({
@@ -422,19 +424,32 @@ it('summary workspace renders 总结结论 section and 关键要点 list', async
   expect(await screen.findByText('source=workspace')).toBeInTheDocument();
 });
 
-// ── Test 6: config panel ──────────────────────────────────────────────────────
-it('renders configuration center with provider controls and action buttons', async () => {
+// ── Test 6: compact summary collapses/expands config settings ────────────────
+it('shows collapsed runtime summary by default, expands to reveal editable settings labels', async () => {
   render(<MainConsole />);
 
-  expect(await screen.findByText('服务与模型配置')).toBeInTheDocument();
-  expect(await screen.findByText('模型 Provider')).toBeInTheDocument();
-  expect(await screen.findByText('新增 Provider')).toBeInTheDocument();
-  expect(await screen.findByText('检测数据库')).toBeInTheDocument();
-  expect((await screen.findAllByText('检测模型连接')).length).toBeGreaterThan(0);
-  expect(await screen.findByText('检测语音配置')).toBeInTheDocument();
-  expect(await screen.findByText('重新加载配置')).toBeInTheDocument();
-  expect(await screen.findByText('恢复上次会话')).toBeInTheDocument();
-  expect(await screen.findByText('刷新首页状态')).toBeInTheDocument();
+  // The expand button is immediately rendered (compact summary row is shown)
+  expect(screen.getByRole('button', { name: '展开配置' })).toBeInTheDocument();
+
+  // Wait for runtime config to load and verify summary shows provider info
+  await waitFor(() => {
+    expect(screen.getAllByText(/自定义 OpenAI/).length).toBeGreaterThan(0);
+  });
+
+  // Full settings labels are NOT visible before expanding
+  expect(screen.queryByText('LLM 提供商')).not.toBeInTheDocument();
+  expect(screen.queryByText('LLM 模型')).not.toBeInTheDocument();
+  expect(screen.queryByText('语音提供商')).not.toBeInTheDocument();
+  expect(screen.queryByText('知识库路径')).not.toBeInTheDocument();
+
+  // Expand the settings
+  fireEvent.click(screen.getByRole('button', { name: '展开配置' }));
+
+  // After expanding, all required setting labels are visible
+  expect(await screen.findByText('LLM 提供商')).toBeInTheDocument();
+  expect(await screen.findByText('LLM 模型')).toBeInTheDocument();
+  expect(await screen.findByText('语音提供商')).toBeInTheDocument();
+  expect(await screen.findByText('知识库路径')).toBeInTheDocument();
 });
 
 // ── Test 7: drawers ───────────────────────────────────────────────────────────
@@ -650,4 +665,36 @@ it('voice connect failure surfaces via error message instead of disappearing', a
 
   // Voice must NOT appear ready after a failed connect
   expect(screen.queryByText('语音已就绪')).not.toBeInTheDocument();
+});
+
+// ── Task 6 Issue 1: saving runtime config with new voice refreshes visible voice state ──
+it('saving runtime config with a different voice refreshes the status bar voice label', async () => {
+  render(<MainConsole />);
+
+  // Initial state from loadHome mock: voice_name is 'longxiaochun'
+  expect(await screen.findByText(/音色：longxiaochun/)).toBeInTheDocument();
+
+  // Expand the runtime config panel (collapsed by default)
+  fireEvent.click(await screen.findByRole('button', { name: '展开配置' }));
+
+  // The config panel's voice select has options with Chinese descriptions (e.g. '长晓白·女声')
+  // This distinguishes it from VoiceSettings which uses plain option text
+  const allSelects = await screen.findAllByRole('combobox');
+  const runtimeVoiceSelect = allSelects.find((el) =>
+    Array.from((el as HTMLSelectElement).options).some((o) => o.text.includes('长晓白')),
+  ) as HTMLSelectElement;
+  expect(runtimeVoiceSelect).toBeTruthy();
+
+  await act(async () => {
+    runtimeVoiceSelect.value = 'longxiaobai';
+    fireEvent.change(runtimeVoiceSelect);
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: '保存配置' }));
+
+  // After save, homeSnapshot.preferences.voice_name must update so status bar reflects new voice
+  await waitFor(() => {
+    expect(screen.getByText(/音色：longxiaobai/)).toBeInTheDocument();
+  });
+  expect(screen.queryByText(/音色：longxiaochun/)).not.toBeInTheDocument();
 });

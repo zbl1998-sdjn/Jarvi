@@ -128,7 +128,24 @@ npm run dev:server
 | `ALIYUN_TTS_VOICE` | | `longxiaochun` | TTS 音色（可选：longxiaochun / longxiaobai / longwan / longcheng / longhua） |
 | `ALIYUN_SPEECH_LANGUAGE` | | `zh-CN` | 语音识别语言 |
 
-## 🧪 测试
+## 🔧 运行时配置（无需重启，应用内调整）
+
+以下常用设置可直接在应用界面中修改，**无需编辑 `.env` 或重启服务**：
+
+| 设置项 | 说明 |
+|---|---|
+| LLM 提供商 | 切换当前使用的 LLM Provider（从已配置的提供商中选择） |
+| LLM 模型 | 修改当前提供商使用的模型名称（如 `kimi-k2.5`、`gpt-4.1` 等） |
+| 语音提供商 | 语音服务提供商（当前支持 `aliyun`） |
+| 音色（Voice） | TTS 音色（如 `longxiaochun` / `longxiaobai` 等） |
+| 知识库路径 | 本地知识库根目录，修改后**立即生效**，知识库搜索将使用新路径，无需重启 |
+
+**操作方式**：在应用首页找到"当前配置："摘要行 → 点击**展开配置** → 修改对应字段 → 点击**保存配置**。
+
+> 上述设置保存后会持久化到 `runtime-config.json`，优先级高于 `.env` 环境变量中的对应项。
+> 若需重置为环境变量默认值，点击**重新加载配置**即可。
+
+
 
 ```bash
 # 前端测试
