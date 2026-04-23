@@ -23,6 +23,7 @@ export interface ActionProposal {
   target: string;
   risk_level: string;
   requires_confirmation: boolean;
+  reason?: string;
 }
 
 export interface Interpretation {

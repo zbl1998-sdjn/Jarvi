@@ -1,5 +1,7 @@
 import type { ActionProposal, ActionRecord } from '../../app/api/assistant-client';
 
+const DEFAULT_REASON = '需要确认后才会执行。';
+
 interface RightDrawerProps {
   pendingConfirmations: ActionProposal[];
   recentActions: ActionRecord[];
@@ -22,7 +24,8 @@ export function RightDrawer({
             <article className="action-card" key={`${proposal.action_type}-${proposal.target}`}>
               <strong>{proposal.action_type}</strong>
               <p>风险等级：{proposal.risk_level}</p>
-              <p>{proposal.target}</p>
+              <p>目标路径：{proposal.target}</p>
+              <p>{proposal.reason || DEFAULT_REASON}</p>
               <button type="button" onClick={() => onApproveAction(proposal)}>
                 批准执行
               </button>
