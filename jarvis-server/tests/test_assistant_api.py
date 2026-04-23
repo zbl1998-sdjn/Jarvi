@@ -58,7 +58,16 @@ def test_interpret_handles_teacher_style_and_high_risk_ambiguity() -> None:
     assert ambiguity_response.json()["action_proposal"] is None
 
 
-def test_search_summary_and_home_snapshot_work_together() -> None:
+def test_search_summary_and_home_snapshot_work_together(monkeypatch) -> None:
+    # Patch the module-level summary_service singleton so the test never hits the real LLM.
+    monkeypatch.setattr(
+        assistant_router.summary_service,
+        "summarize",
+        lambda source_type, content: {
+            "summary": content,
+            "bullets": ["会话要点一", "会话要点二"],
+        },
+    )
     client = TestClient(create_app())
 
     search_response = client.get("/api/search", params={"query": "Jarvis", "scope": "local"})
