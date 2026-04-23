@@ -29,6 +29,7 @@ class SpeechConfig:
     tts_model: str
     voice_name: str
     language: str
+    provider: str = "aliyun"
 
     def to_dict(self) -> dict[str, str]:
         return asdict(self)
@@ -130,6 +131,7 @@ def _default_runtime_config() -> RuntimeConfig:
             tts_model=settings.aliyun_tts_model,
             voice_name=settings.aliyun_tts_voice,
             language=settings.aliyun_speech_language,
+            provider="aliyun",
         ),
     )
 
@@ -171,5 +173,7 @@ def _runtime_config_from_payload(payload: dict[str, object]) -> RuntimeConfig:
             or fallback.speech.voice_name,
             language=str(speech_payload.get("language", fallback.speech.language)).strip()
             or fallback.speech.language,
+            provider=str(speech_payload.get("provider", fallback.speech.provider)).strip()
+            or fallback.speech.provider,
         ),
     )

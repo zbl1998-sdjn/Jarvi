@@ -129,7 +129,7 @@ class PreferenceState(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     teacher_style: Mapped[str] = mapped_column(String(64), default="幽默风趣型")
-    voice_name: Mapped[str] = mapped_column(String(128), default="zh-CN-XiaoxiaoNeural")
+    voice_name: Mapped[str] = mapped_column(String(128), default="longxiaochun")
     updated_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: dt.datetime.now(dt.UTC),

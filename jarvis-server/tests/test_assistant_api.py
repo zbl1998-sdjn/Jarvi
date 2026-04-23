@@ -243,6 +243,105 @@ def test_runtime_config_supports_multiple_providers_and_dependency_checks(tmp_pa
     assert json.loads(config_path.read_text(encoding="utf-8"))["active_provider_id"] == "custom-openai"
 
 
+def test_home_snapshot_exposes_runtime_summary(monkeypatch, tmp_path) -> None:
+    config_path = tmp_path / "runtime-config.json"
+    # Write an explicit config so the test never falls back to env-var-based defaults.
+    config_path.write_text(
+        json.dumps({
+            "database_url": "sqlite+pysqlite:///test-runtime.db",
+            "providers": [{
+                "id": "kimi-default",
+                "label": "Kimi",
+                "base_url": "https://api.moonshot.ai/v1",
+                "api_key": "test-key",
+                "model": "kimi-k2.5",
+                "enabled": True,
+            }],
+            "active_provider_id": "kimi-default",
+            "speech": {
+                "api_key": "test-speech-key",
+                "asr_model": "paraformer-realtime-v2",
+                "tts_model": "cosyvoice-v1",
+                "voice_name": "longxiaochun",
+                "language": "zh-CN",
+                "provider": "aliyun",
+            },
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("app.services.runtime_config_service.RUNTIME_CONFIG_PATH", config_path)
+
+    client = TestClient(create_app())
+    response = client.get("/api/home")
+
+    assert response.status_code == 200
+    runtime = response.json().get("runtime")
+    assert runtime is not None
+    required_keys = {"llm_provider", "llm_model", "speech_provider", "voice_name", "knowledge_root", "knowledge_root_exists"}
+    assert required_keys <= set(runtime.keys())
+    # Values reflect the public release (Aliyun/Kimi) stack locked in the fixture config above.
+    # runtime.voice_name mirrors the DB-backed preference (default "longxiaochun"),
+    # not the runtime config JSON, so it always matches what /api/tts will use.
+    assert runtime["voice_name"] == "longxiaochun"
+    assert runtime["speech_provider"] == "aliyun"
+    assert runtime["llm_provider"] == "kimi-default"
+    assert isinstance(runtime["knowledge_root_exists"], bool)
+
+
+def test_home_runtime_voice_name_mirrors_db_preference_not_config_json(monkeypatch, tmp_path) -> None:
+    """runtime.voice_name must equal preferences.voice_name (DB) — never drift from it.
+
+    Even when the runtime config JSON carries a different voice_name, the effective
+    voice that /api/tts uses is the DB-backed preference. /api/home must reflect that
+    same value in runtime.voice_name so clients can rely on a single source of truth.
+    """
+    config_path = tmp_path / "runtime-config.json"
+    # Runtime config JSON has a *different* voice from the DB preference.
+    config_path.write_text(
+        json.dumps({
+            "database_url": "sqlite+pysqlite:///test-mirror.db",
+            "providers": [{
+                "id": "kimi-default",
+                "label": "Kimi",
+                "base_url": "https://api.moonshot.ai/v1",
+                "api_key": "test-key",
+                "model": "kimi-k2.5",
+                "enabled": True,
+            }],
+            "active_provider_id": "kimi-default",
+            "speech": {
+                "api_key": "",
+                "asr_model": "paraformer-realtime-v2",
+                "tts_model": "cosyvoice-v1",
+                "voice_name": "config-json-voice",  # intentionally differs from DB preference
+                "language": "zh-CN",
+                "provider": "aliyun",
+            },
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("app.services.runtime_config_service.RUNTIME_CONFIG_PATH", config_path)
+
+    client = TestClient(create_app())
+    # Set DB preference to a voice that differs from the config JSON value.
+    pref_response = client.post(
+        "/api/preferences",
+        json={"teacher_style": "默认", "voice_name": "db-pref-voice"},
+    )
+    assert pref_response.status_code == 200
+
+    home_response = client.get("/api/home")
+    assert home_response.status_code == 200
+    body = home_response.json()
+
+    # DB preference reflects the saved voice.
+    assert body["preferences"]["voice_name"] == "db-pref-voice"
+    # runtime.voice_name must mirror the DB preference, not the config JSON.
+    assert body["runtime"]["voice_name"] == "db-pref-voice"
+    # The two fields must agree — no drift.
+    assert body["runtime"]["voice_name"] == body["preferences"]["voice_name"]
+
+
 def test_action_proposal_marks_command_execution_as_dangerous() -> None:
     client = TestClient(create_app())
 

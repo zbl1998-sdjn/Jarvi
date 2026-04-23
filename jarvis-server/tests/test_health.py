@@ -215,6 +215,15 @@ def test_create_app_starts_in_degraded_mode_when_database_bootstrap_fails(monkey
     }
 
 
+def test_preference_state_voice_name_defaults_to_longxiaochun() -> None:
+    from app.models import PreferenceState
+
+    col = PreferenceState.__table__.c.voice_name
+
+    assert col.default is not None
+    assert col.default.arg == "longxiaochun"
+
+
 def test_contract_scaffold_exists_for_cross_layer_schema() -> None:
     from app.config import ROOT_DIR
 

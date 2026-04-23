@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.config import get_settings
 from app.db import SessionLocal, configure_database
 from app.services.action_service import ActionService
 from app.services.memory_service import MemoryService
@@ -81,6 +84,7 @@ class SpeechConfigRequest(BaseModel):
     tts_model: str = "cosyvoice-v1"
     voice_name: str = "longxiaochun"
     language: str = "zh-CN"
+    provider: str = "aliyun"
 
 
 class RuntimeConfigRequest(BaseModel):
@@ -289,6 +293,24 @@ def save_workspace_state(request: WorkspaceStateRequest) -> dict[str, object]:
 def home() -> dict[str, object]:
     db = SessionLocal()
     try:
-        return memory_service.snapshot(db)
+        snapshot = memory_service.snapshot(db)
+        runtime_config = get_runtime_config()
+        active_provider = next(
+            (p for p in runtime_config.providers if p.id == runtime_config.active_provider_id),
+            runtime_config.providers[0],
+        )
+        knowledge_root = Path(get_settings().knowledge_root)
+        snapshot["runtime"] = {
+            "llm_provider": active_provider.id,
+            "llm_model": active_provider.model,
+            "speech_provider": runtime_config.speech.provider,
+            # Reflect the DB-backed effective preference so runtime.voice_name
+            # always matches the voice that /api/tts actually uses, preventing
+            # drift with the runtime config JSON.
+            "voice_name": snapshot["preferences"]["voice_name"],
+            "knowledge_root": str(knowledge_root),
+            "knowledge_root_exists": knowledge_root.exists(),
+        }
+        return snapshot
     finally:
         db.close()

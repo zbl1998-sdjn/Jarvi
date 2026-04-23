@@ -156,7 +156,7 @@ class MemoryService:
             },
             "resume": {
                 "workspace": workspace_state.active_workspace if workspace_state else "console",
-                "session_id": workspace_state.last_session_id or latest_session_id,
+                "session_id": (workspace_state.last_session_id if workspace_state else None) or latest_session_id,
             },
             "stage_progress": {
                 "current_stage": "M6",
