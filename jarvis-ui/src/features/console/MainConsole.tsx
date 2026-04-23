@@ -33,6 +33,7 @@ import { VoiceSettings } from '../voice/VoiceSettings';
 import { getShellModeLabel, getVoiceModeLabel } from '../voice/voice-utils';
 import { WorkspaceRouter, type WorkspaceId } from '../workspace/WorkspaceRouter';
 import { CommandDock } from './CommandDock';
+import { DiagnosticsStrip } from './DiagnosticsStrip';
 import { TopStatusBar } from './TopStatusBar';
 
 const EMPTY_HOME: HomeSnapshot = {
@@ -167,6 +168,7 @@ export function MainConsole() {
     void saveWorkspaceState(activeWorkspace, sessionId ?? undefined);
   }, [activeWorkspace, sessionId]);
 
+  // ── Text send: uses streamChat exclusively; also routes workspace via interpretVoice ──
   async function handleSubmit() {
     const trimmedQuery = query.trim();
     if (!trimmedQuery || isStreaming) {
@@ -195,92 +197,101 @@ export function MainConsole() {
         },
         sessionId ?? undefined,
       );
+
+      // Workspace routing via interpretation (preserves cockpit capabilities)
+      const interpretation = await interpretVoice(trimmedQuery, hotkeyArmed);
+
+      if (interpretation.workspace === 'search') {
+        setSearchResults(await searchWorkspace(trimmedQuery, 'auto'));
+        setActiveWorkspace('search');
+      }
+
+      if (interpretation.workspace === 'summary') {
+        setSummaryResult(await summarizeContent('voice', trimmedQuery));
+        setActiveWorkspace('summary');
+      }
+
+      if (interpretation.workspace === 'records') {
+        setActiveWorkspace('records');
+      }
+
+      if (interpretation.workspace === 'tasks') {
+        setActiveWorkspace('tasks');
+      }
+
+      if (interpretation.action_proposal) {
+        setPendingConfirmations((current) => [
+          ...current,
+          interpretation.action_proposal as ActionProposal,
+        ]);
+      }
+
+      if (interpretation.clarification) {
+        setReply((current) =>
+          current ? `${current}\n\n${interpretation.clarification}` : interpretation.clarification!,
+        );
+      }
+
+      if (interpretation.teacher_style) {
+        await handleSavePreferences(
+          interpretation.teacher_style,
+          homeSnapshot.preferences.voice_name,
+        );
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Jarvis 文本流失败',
       );
     } finally {
+      setHotkeyArmed(false);
       setIsStreaming(false);
       await loadHomeSnapshot();
     }
   }
 
+  // ── Voice connect: establishes realtime session ────────────────────────────
   async function handleVoiceConnect() {
     setErrorMessage('');
-    await realtimeClientRef.current.connect();
-    setVoiceReady(true);
-    setHotkeyArmed(true);
+    try {
+      await realtimeClientRef.current.connect();
+      setVoiceReady(true);
+      setHotkeyArmed(true);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '语音连接失败');
+    }
   }
 
+  // ── Push to talk: microphone capture only; no text routing ────────────────
   async function handlePushToTalk() {
-    const trimmedQuery = query.trim();
     if (!voiceReady) {
       return;
     }
 
     setReply('');
     setErrorMessage('');
-    if (!trimmedQuery) {
-      if (!isCapturingAudio) {
+
+    if (!isCapturingAudio) {
+      try {
         await realtimeClientRef.current.startMicrophoneCapture();
         setVoiceState('listening');
         setIsCapturingAudio(true);
-        return;
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : '麦克风启动失败');
       }
+      return;
+    }
 
+    try {
       await realtimeClientRef.current.stopMicrophoneCapture(
         homeSnapshot.preferences.voice_name,
         homeSnapshot.preferences.teacher_style,
       );
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '麦克风停止失败');
+      setVoiceState('idle');
+    } finally {
       setIsCapturingAudio(false);
-      return;
     }
-
-    await realtimeClientRef.current.sendText(
-      trimmedQuery,
-      homeSnapshot.preferences.teacher_style,
-    );
-
-    const interpretation = await interpretVoice(trimmedQuery, hotkeyArmed);
-
-    if (interpretation.workspace === 'search') {
-      setSearchResults(await searchWorkspace(trimmedQuery, 'auto'));
-      setActiveWorkspace('search');
-    }
-
-    if (interpretation.workspace === 'summary') {
-      setSummaryResult(await summarizeContent('voice', trimmedQuery));
-      setActiveWorkspace('summary');
-    }
-
-    if (interpretation.workspace === 'records') {
-      setActiveWorkspace('records');
-    }
-
-    if (interpretation.workspace === 'tasks') {
-      setActiveWorkspace('tasks');
-    }
-
-    if (interpretation.action_proposal) {
-      setPendingConfirmations((current) => [
-        ...current,
-        interpretation.action_proposal as ActionProposal,
-      ]);
-    }
-
-    if (interpretation.clarification) {
-      setReply(interpretation.clarification);
-    }
-
-    if (interpretation.teacher_style) {
-      await handleSavePreferences(
-        interpretation.teacher_style,
-        homeSnapshot.preferences.voice_name,
-      );
-    }
-
-    setHotkeyArmed(false);
-    await loadHomeSnapshot();
   }
 
   function handleInterrupt() {
@@ -324,24 +335,31 @@ export function MainConsole() {
   }
 
   async function handleApproveAction(proposal: ActionProposal) {
-    const result = await executeAction(
-      proposal.action_type,
-      proposal.target,
-      undefined,
-      true,
-    );
-    setReply(result.detail);
-    setPendingConfirmations((current) =>
-      current.filter(
-        (item) =>
-          !(
-            item.action_type === proposal.action_type &&
-            item.target === proposal.target
-          ),
-      ),
-    );
-    setActiveWorkspace('records');
-    await loadHomeSnapshot();
+    try {
+      const result = await executeAction(
+        proposal.action_type,
+        proposal.target,
+        undefined,
+        true,
+      );
+      setReply(result.detail);
+      setPendingConfirmations((current) =>
+        current.filter(
+          (item) =>
+            !(
+              item.action_type === proposal.action_type &&
+              item.target === proposal.target
+            ),
+        ),
+      );
+      setActiveWorkspace('records');
+      await loadHomeSnapshot();
+    } catch (error) {
+      setReply('');
+      setErrorMessage(
+        error instanceof Error ? error.message : '执行动作失败',
+      );
+    }
   }
 
   async function handleSavePreferences(teacherStyle: string, voiceName: string) {
@@ -394,17 +412,37 @@ export function MainConsole() {
     `老师：${homeSnapshot.preferences.teacher_style}`,
     `音色：${homeSnapshot.preferences.voice_name}`,
   ];
-  const degradedMessage = [
-    healthStatus?.dependencies.database === 'offline' ? '数据库未连接' : null,
-    healthStatus?.dependencies.llm === 'missing' ? '模型未配置' : null,
-    healthStatus?.dependencies.speech === 'missing' ? '语音未配置' : null,
-  ]
-    .filter(Boolean)
-    .join('；');
+
+  const providerLabel = useMemo(() => {
+    if (!runtimeConfig) return undefined;
+    const active = runtimeConfig.providers.find(
+      (p) => p.id === runtimeConfig.active_provider_id,
+    );
+    return active ? `${active.label} / ${active.model}` : undefined;
+  }, [runtimeConfig]);
+
+  const sessionLabel = sessionId ? `会话 ${sessionId}` : undefined;
+
+  const diagItems = [
+    healthStatus?.dependencies.database === 'offline'
+      ? { key: 'database', label: '数据库未连接' }
+      : null,
+    healthStatus?.dependencies.llm === 'missing'
+      ? { key: 'llm', label: '模型未配置' }
+      : null,
+    healthStatus?.dependencies.speech === 'missing'
+      ? { key: 'speech', label: '语音未配置' }
+      : null,
+  ].filter((item): item is { key: string; label: string } => item !== null);
 
   return (
     <div className="console-shell console-shell--hud">
-      <TopStatusBar modeLabel={modeLabel} statusItems={statusItems} />
+      <TopStatusBar
+        modeLabel={modeLabel}
+        providerLabel={providerLabel}
+        sessionLabel={sessionLabel}
+        statusItems={statusItems}
+      />
       <div className="console-layout console-layout--collapsed">
         <button
           aria-expanded={leftDrawerOpen}
@@ -437,11 +475,24 @@ export function MainConsole() {
             <span>{getShellModeLabel(shellInfo?.mode)}</span>
             <span>{sessionId ? `会话 ${sessionId}` : '当前没有活跃会话'}</span>
           </div>
+          <DiagnosticsStrip
+            items={diagItems}
+            onReloadRuntime={() => void handleReloadRuntimeConfig()}
+            onReconnectVoice={
+              healthStatus?.dependencies.speech != null &&
+              healthStatus.dependencies.speech !== 'missing'
+                ? () => void handleVoiceConnect()
+                : undefined
+            }
+            onResumeSession={
+              homeSnapshot.resume.session_id ? handleResumeSession : undefined
+            }
+          />
           <RuntimeConfigPanel
             onCheck={handleCheckRuntimeConfig}
             onFocusUpload={() => {
               setActiveWorkspace('search');
-              setReply('可在“资料上传”区域继续添加图片、文件或代码片段。');
+              setReply('可在"资料上传"区域继续添加图片、文件或代码片段。');
             }}
             onOpenRecords={() => setActiveWorkspace('records')}
             onOpenTasks={() => setActiveWorkspace('tasks')}
@@ -469,6 +520,7 @@ export function MainConsole() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
+          {/* Voice controls: connect / start / stop capture / interrupt */}
           <div className="control-row">
             <button
               className="secondary-button"
@@ -483,7 +535,7 @@ export function MainConsole() {
               onClick={() => void handlePushToTalk()}
               type="button"
             >
-              {isCapturingAudio ? '结束收音' : query.trim() ? '按住说话' : '开始收音'}
+              {isCapturingAudio ? '结束收音' : '开始收音'}
             </button>
             <button
               className="secondary-button"
@@ -494,6 +546,7 @@ export function MainConsole() {
               打断播报
             </button>
           </div>
+          {/* Text send: routes through streamChat exclusively */}
           <button
             className="send-button"
             onClick={() => void handleSubmit()}
@@ -501,12 +554,8 @@ export function MainConsole() {
           >
             {isStreaming ? '发送中…' : '发送'}
           </button>
-          <section
-            className={`reply-card${healthStatus?.degraded ? ' reply-card--warning' : ''}`}
-          >
-            {healthStatus?.degraded
-              ? `服务未就绪，当前处于受限模式。${degradedMessage || '请先检查运行时配置。'}`
-              : reply || errorMessage || '等待文本或语音流…'}
+          <section className="reply-card">
+            {reply || errorMessage || '等待文本或语音流…'}
           </section>
           <WorkspaceRouter
             activeWorkspace={activeWorkspace}

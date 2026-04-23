@@ -65,12 +65,20 @@ export function WorkspaceRouter({
     return (
       <section className="workspace-card">
         <h2>总结视图</h2>
-        <p>{summaryResult?.summary ?? '还没有总结结果。'}</p>
-        <ul>
-          {(summaryResult?.bullets ?? []).map((bullet) => (
-            <li key={bullet}>{bullet}</li>
-          ))}
-        </ul>
+        {summaryResult ? (
+          <>
+            <h3>总结结论</h3>
+            <p>{summaryResult.summary}</p>
+            <h3>关键要点</h3>
+            <ul>
+              {summaryResult.bullets.map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p>还没有总结结果。</p>
+        )}
       </section>
     );
   }

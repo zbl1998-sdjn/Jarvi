@@ -508,3 +508,62 @@ textarea {
   border-color: rgba(255, 190, 120, 0.5) !important;
   color: #ffd9a8;
 }
+
+/* ==== DiagnosticsStrip ==== */
+
+.diagnostics-strip {
+  width: min(720px, 100%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.diagnostics-strip--healthy {
+  border: 1px solid rgba(77, 255, 181, 0.25);
+  background: rgba(5, 30, 20, 0.55);
+  color: #5ddfb4;
+}
+
+.diagnostics-strip--degraded {
+  border: 1px solid rgba(255, 184, 77, 0.4);
+  background: rgba(40, 20, 4, 0.75);
+  color: #ffd79e;
+}
+
+.diagnostics-strip__ok {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.diagnostics-strip__item {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 184, 77, 0.35);
+  background: rgba(60, 30, 4, 0.6);
+  color: #ffcc88;
+  font-weight: 600;
+}
+
+.diagnostics-strip__action {
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 195, 255, 0.3);
+  background: rgba(16, 35, 58, 0.92);
+  color: #d7e6ff;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.status-pill--provider {
+  border-color: rgba(134, 145, 255, 0.4);
+  color: #b8b8ff;
+}
+
+.status-pill--session {
+  border-color: rgba(77, 255, 181, 0.3);
+  color: #7ddfb8;
+}
